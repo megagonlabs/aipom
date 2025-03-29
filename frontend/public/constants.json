@@ -1,0 +1,30 @@
+{
+  "MsgType": {
+    "STATUS": "status",
+    "CONNECTION": "connection",
+    "CHAT": "chat",
+    "PLAN": "plan",
+    "INTERACTION": "interaction",
+    "EXECUTE": "execute",
+    "RESET": "reset"
+  },
+  "Status": {
+    "RECEIVED": "Received",
+    "STARTING": "Starting",
+    "FINISHED": "Finished",
+    "ERROR": "Error"
+  },
+  "InteractionType": {
+    "ADD_NODE": "add_node",
+    "REMOVE_NODE": "remove_node",
+    "ADD_EDGE": "add_edge",
+    "REMOVE_EDGE": "remove_edge",
+    "MODIFY_NODE": "modify_node",
+    "MODIFY_NODE_EDGES": "modify_node_edges",
+    "UPDATE_EXEC": "update_exec",
+    "SPLIT_NODE": "split_node",
+    "MERGE_NODES": "merge_nodes",
+    "FIX_PLAN": "fix_plan",
+    "REPLAN": "replan"
+  }
+}
