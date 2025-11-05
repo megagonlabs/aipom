@@ -1,0 +1,8 @@
+fastapi
+networkx
+openai
+pydantic
+requests
+uvicorn
+websockets
+wsproto

@@ -1,0 +1,152 @@
+import { create } from "zustand";
+import { addEdge, applyEdgeChanges, applyNodeChanges } from "@xyflow/react";
+
+import { layout } from "../utils/graph";
+
+const initialPlanState = {
+  id: "",
+  query: "",
+  timestamp: 0,
+  nodes: [],
+  edges: [],
+};
+
+export const usePlanStore = create((set, get) => ({
+  ...initialPlanState,
+
+  initializePlan: () => {
+    set(initialPlanState);
+  },
+  getNextNodeId: () => {
+    const nodes = get().nodes;
+    const maxId =
+      nodes.length > 0
+        ? Math.max(...nodes.map((node) => parseInt(node.id)))
+        : -1;
+    return (maxId + 1).toString();
+  },
+
+  onNodesChange: (changes) => {
+    set({
+      nodes: applyNodeChanges(changes, get().nodes),
+    });
+  },
+  onEdgesChange: (changes) => {
+    set({
+      edges: applyEdgeChanges(changes, get().edges),
+    });
+  },
+
+  setQuery: (query) => {
+    set({ query });
+  },
+  applyLayout: () => {
+    const { nodes, edges } = layout(get().nodes, get().edges);
+    set({ nodes, edges });
+  },
+  setPlan: (plan) => {
+    set({ ...plan });
+  },
+  setPlanLayout: (plan) => {
+    const { nodes, edges } = layout(plan.nodes, plan.edges);
+    set({ ...plan, nodes, edges });
+  },
+  setNodes: (nodes) => {
+    set({ nodes });
+  },
+  addNode: (node) => {
+    set({ nodes: [...get().nodes, node] });
+  },
+  removeNode: (nodeId) => {
+    set({ nodes: get().nodes.filter((node) => node.id !== nodeId) });
+  },
+  updateNodeData: (nodeId, nodeData) => {
+    set({
+      nodes: get().nodes.map((node) => {
+        if (node.id === nodeId) {
+          return { ...node, data: { ...nodeData } };
+        }
+        return node;
+      }),
+    });
+  },
+  doesIOVarExist: (nodeId, varType, val) => {
+    const node = get().nodes.find((node) => node.id == nodeId);
+    if (varType == "input") {
+      return node.data.input.some((d) => d[0] == val[0]);
+    } else if (varType == "output") {
+      return node.data.output.includes(val);
+    }
+    return true;
+  },
+  setEdges: (edges) => {
+    set({ edges });
+  },
+  addEdge: (edge) => {
+    set({ edges: addEdge(edge, get().edges) });
+  },
+  removeEdge: (edgeID) => {
+    set({ edges: get().edges.filter((edge) => edge.id !== edgeID) });
+  },
+  removeConnectedEdges: (nodeId, varType, handleId) => {
+    set({
+      edges: get().edges.filter((edge) => {
+        if (varType == "input") {
+          return edge.target !== nodeId || edge.targetHandle !== handleId;
+        } else if (varType == "output") {
+          return edge.source !== nodeId || edge.sourceHandle !== handleId;
+        } else {
+          return true;
+        }
+      }),
+    });
+  },
+  updateConnectedEdges: (nodeId, varType, idx, handleId, newHandleId) => {
+    set({
+      nodes: get().nodes.map((node) => {
+        if (node.id === nodeId) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              [varType]: node.data[varType].map((d, i) => {
+                if (i == idx) {
+                  return varType == "input" ? [newHandleId, d[1]] : newHandleId;
+                }
+                return d;
+              }),
+              plan_status: "MODIFIED",
+            },
+          };
+        }
+        return node;
+      }),
+      edges: get().edges.map((edge) => {
+        const sourceOrTarget = varType == "input" ? "target" : "source";
+        const sourceOrTargetHandle =
+          varType == "input" ? "targetHandle" : "sourceHandle";
+        const destInOrSrcOut = varType == "input" ? "dest_input" : "src_output";
+        const newId =
+          varType == "input"
+            ? `e_${edge.source}-${edge.target}_('${edge.sourceHandle}', '${newHandleId}')`
+            : `e_${edge.source}_${edge.target}_('${newHandleId}', '${edge.targetHandle}')`;
+        if (
+          edge[sourceOrTarget] == nodeId &&
+          edge[sourceOrTargetHandle] == handleId
+        ) {
+          return {
+            ...edge,
+            id: newId,
+            [sourceOrTargetHandle]: newHandleId,
+            data: {
+              ...edge.data,
+              [destInOrSrcOut]: newHandleId,
+              plan_status: "MODIFIED",
+            },
+          };
+        }
+        return edge;
+      }),
+    });
+  },
+}));
